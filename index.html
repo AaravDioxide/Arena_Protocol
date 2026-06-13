@@ -23,7 +23,18 @@
             background-color: var(--bg); color: var(--text);
             font-family: 'Rajdhani', sans-serif;
             overflow: hidden;
-            touch-action: none; /* Prevent scroll on touch devices */
+            touch-action: none; /* Prevent scroll/zoom on touch */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top section for the game */
+        #game-view {
+            position: relative;
+            width: 100%;
+            flex: 1 1 auto;
+            min-height: 0; /* Important for flex child to shrink properly */
+            overflow: hidden;
         }
 
         canvas {
@@ -31,6 +42,31 @@
             width: 100%; height: 100%;
             cursor: crosshair;
         }
+
+        /* Bottom section for mobile controls */
+        #mobile-controls { 
+            display: none; 
+            flex-shrink: 0; 
+            background: #07070b; 
+            border-top: 2px solid rgba(0,255,255,0.2); 
+            z-index: 50; 
+            width: 100%; 
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.5); 
+        }
+        #mobile-controls.active { 
+            display: flex; 
+            flex-direction: column; 
+            height: 40vh; /* Bottom 40% reserved for controls */
+            min-height: 250px; 
+        }
+
+        .btn-row { display: flex; justify-content: center; gap: 15px; align-items: center; padding: 15px 10px; border-bottom: 1px solid rgba(0,255,255,0.05); width: 100%; }
+        .action-btn { background: rgba(0,255,255,0.05); color: var(--primary); border: 1px solid var(--primary); border-radius: 8px; padding: 12px 20px; font-size: 1.2rem; font-weight: bold; font-family: inherit; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px rgba(0,255,255,0.1); touch-action: manipulation; flex: 1; max-width: 140px; cursor: pointer; }
+        .action-btn:active { background: var(--primary); color: #000; box-shadow: 0 0 20px var(--primary); }
+
+        .joystick-row { display: flex; justify-content: space-around; align-items: center; flex: 1; width: 100%; padding: 10px; }
+        .joystick-base { position: relative; width: 120px; height: 120px; background: rgba(0, 255, 255, 0.05); border: 2px solid rgba(0, 255, 255, 0.3); border-radius: 50%; pointer-events: auto; touch-action: none; }
+        .joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(0, 255, 255, 0.5); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px rgba(0,255,255,0.4); pointer-events: none; }
 
         /* UI Overlays */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -99,7 +135,6 @@
         .card h3 { color: var(--primary); margin-top: 0; font-size: 1.4rem; }
         .card p { font-size: 1rem; color: #ccc; }
 
-        /* Stats & UI Elements */
         .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; background: rgba(0,0,0,0.5); padding: 20px; border: 1px solid #333; max-width: 90%; }
         .stat-label { color: #888; }
         .stat-val { color: #fff; font-weight: bold; text-align: right; }
@@ -123,141 +158,131 @@
             pointer-events: none;
         }
 
-        /* Mobile Controls */
-        #mobile-controls { display: none; position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
-        #mobile-controls.active { display: block; }
-
-        .joystick-base { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(0, 255, 255, 0.08); border: 2px solid rgba(0, 255, 255, 0.3); border-radius: 50%; pointer-events: auto; }
-        .joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(0, 255, 255, 0.5); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(0,255,255,0.5); }
-        #joystick-left { left: 30px; bottom: 30px; }
-        #joystick-right { right: 30px; bottom: 30px; }
-        
-        .action-buttons { position: absolute; bottom: 170px; right: 30px; pointer-events: auto; display: flex; gap: 15px; flex-direction: row-reverse; }
-        .action-btn { background: rgba(0,0,0,0.5); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; width: 55px; height: 55px; font-size: 0.9rem; font-weight: bold; font-family: inherit; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px rgba(0,255,255,0.2); }
-        .action-btn:active { background: var(--primary); color: #000; }
-
         /* Responsive Breakpoints */
-        @media (max-width: 768px), (aspect-ratio: 9/16) {
-            h1 { font-size: 2.8rem; }
-            h2 { font-size: 2rem; }
-            .hud-top { flex-direction: row; justify-content: space-between; }
-            #wave-info { order: -1; width: 100%; margin-bottom: 5px; } /* Push wave info to its own line at the top */
-            .panel { padding: 8px; font-size: 0.9rem; }
-            #ammo-text { font-size: 1.8rem; }
-            #speedrun-timer { font-size: 1.5rem; top: calc(env(safe-area-inset-top) + 40px); }
-            button { padding: 12px 25px; font-size: 1.2rem; }
+        @media (max-width: 768px), (pointer: coarse), (aspect-ratio: 9/16) {
+            h1 { font-size: 2.2rem; }
+            h2 { font-size: 1.8rem; }
+            .hud-top { flex-direction: row; gap: 5px; justify-content: space-between; }
+            #wave-info { order: -1; width: 100%; margin-bottom: 5px; font-size: 1.2rem; }
+            .panel { padding: 6px; font-size: 0.8rem; }
+            #ammo-text { font-size: 1.5rem; }
+            #speedrun-timer { font-size: 1.2rem; top: calc(env(safe-area-inset-top) + 5px); }
+            button { padding: 10px 20px; font-size: 1.1rem; }
+            .health-bar-container { min-width: 100px; height: 15px; }
+            #health-text { font-size: 10px; line-height: 15px; }
             
-            /* Adjust joysticks for smaller screens */
+            /* Smaller joysticks for very small screens if necessary */
             .joystick-base { width: 100px; height: 100px; }
             .joystick-knob { width: 40px; height: 40px; }
-            #joystick-left { left: 15px; bottom: 15px; }
-            #joystick-right { right: 15px; bottom: 15px; }
-            .action-buttons { bottom: 130px; right: 15px; flex-direction: column; }
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <div id="damage-overlay"></div>
+    <div id="game-view">
+        <canvas id="gameCanvas"></canvas>
+        <div id="damage-overlay"></div>
 
-    <div id="ui-layer">
-        <!-- Main Menu -->
-        <div id="menu-screen" class="screen active">
-            <h1>Arena Protocol</h1>
-            <p>Every run is unique. The arena evolves. Skill over stats.</p>
-            <input type="text" id="seed-input" placeholder="Enter Seed (Optional)" maxlength="12">
-            <button id="btn-start">Initiate Run</button>
-            <button id="btn-stats">Database</button>
-            <p style="font-size: 0.9rem; color: #666; margin-top: 40px;">WASD/Joystick to Move | Mouse/Joystick to Aim & Shoot<br>SPACE/Btn to Dash | R/Btn to Reload</p>
-        </div>
-
-        <!-- Stats Screen -->
-        <div id="stats-screen" class="screen">
-            <h2>Combat Database</h2>
-            <div class="stat-grid" id="stats-container">
-                <!-- Populated via JS -->
+        <div id="ui-layer">
+            <!-- Main Menu -->
+            <div id="menu-screen" class="screen active">
+                <h1>Arena Protocol</h1>
+                <p>Every run is unique. The arena evolves. Skill over stats.</p>
+                <input type="text" id="seed-input" placeholder="Enter Seed (Optional)" maxlength="12">
+                <button id="btn-start">Initiate Run</button>
+                <button id="btn-stats">Database</button>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 40px;">WASD/Joystick to Move | Mouse/Joystick to Aim & Shoot<br>SPACE/Btn to Dash | R/Btn to Reload</p>
             </div>
-            <button id="btn-stats-back" style="margin-top: 30px;">Return</button>
-        </div>
 
-        <!-- HUD -->
-        <div id="hud">
-            <div id="speedrun-timer">00:00.000</div>
-            <div class="hud-top">
-                <div class="panel">
-                    <div style="font-size: 1.2rem;">LEVEL <span id="hud-level" style="color:var(--primary); font-weight:bold;">1</span></div>
-                    <div style="font-size: 1rem; color: #aaa;">SCORE <span id="hud-score" style="color:#fff;">0</span></div>
-                    <div class="health-bar-container">
-                        <div id="health-bar"></div>
-                        <div id="health-text">100 / 100</div>
+            <!-- Stats Screen -->
+            <div id="stats-screen" class="screen">
+                <h2>Combat Database</h2>
+                <div class="stat-grid" id="stats-container">
+                    <!-- Populated via JS -->
+                </div>
+                <button id="btn-stats-back" style="margin-top: 30px;">Return</button>
+            </div>
+
+            <!-- HUD -->
+            <div id="hud">
+                <div id="speedrun-timer">00:00.000</div>
+                <div class="hud-top">
+                    <div class="panel">
+                        <div style="font-size: 1.2rem;">LEVEL <span id="hud-level" style="color:var(--primary); font-weight:bold;">1</span></div>
+                        <div style="font-size: 1rem; color: #aaa;">SCORE <span id="hud-score" style="color:#fff;">0</span></div>
+                        <div class="health-bar-container">
+                            <div id="health-bar"></div>
+                            <div id="health-text">100 / 100</div>
+                        </div>
+                        <div class="dash-bar-container">
+                            <div id="dash-bar"></div>
+                        </div>
                     </div>
-                    <div class="dash-bar-container">
-                        <div id="dash-bar"></div>
+                    <div id="wave-info" class="panel">
+                        <div id="wave-text">WAVE 1/1</div>
+                        <div id="enemy-count" style="font-size:1rem; color:#aaa;">Enemies: 0</div>
+                    </div>
+                    <div class="panel" id="weapon-info">
+                        <div id="ammo-text">12/12</div>
+                        <div id="weapon-name">Pistol</div>
+                        <div id="weapon-list" style="font-size: 0.8rem; color: #666; margin-top: 5px;"></div>
                     </div>
                 </div>
-                <div id="wave-info" class="panel">
-                    <div id="wave-text">WAVE 1/1</div>
-                    <div id="enemy-count" style="font-size:1rem; color:#aaa;">Enemies: 0</div>
+                
+                <div style="width:100%; text-align:center;">
+                    <div id="boss-health-container">
+                        <div id="boss-health-bar"></div>
+                        <div id="boss-name">JUGGERNAUT [ARMORED]</div>
+                    </div>
                 </div>
-                <div class="panel" id="weapon-info">
-                    <div id="ammo-text">12/12</div>
-                    <div id="weapon-name">Pistol</div>
-                    <div id="weapon-list" style="font-size: 0.8rem; color: #666; margin-top: 5px;"></div>
+                
+                <div class="hud-bottom">
+                    <div id="event-log" style="font-size: 1.1rem; color: var(--primary); text-shadow: 0 0 5px var(--primary); height: 60px; display: flex; flex-direction: column; justify-content: flex-end;"></div>
                 </div>
+                <div id="reload-prompt" class="reload-prompt">PRESS R TO RELOAD</div>
+            </div>
+
+            <!-- Upgrade Screen -->
+            <div id="upgrade-screen" class="screen">
+                <h2>Area Cleared</h2>
+                <p>Select an augmentation for the next arena.</p>
+                <div class="upgrade-cards" id="upgrade-container">
+                    <!-- Cards injected here -->
+                </div>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="gameover-screen" class="screen">
+                <h1 style="color: var(--danger); text-shadow: 0 0 20px var(--danger);">Run Terminated</h1>
+                <div class="panel" style="text-align: center; margin-bottom: 30px;">
+                    <h3 style="margin: 0 0 10px 0;">Final Statistics</h3>
+                    <p style="margin: 5px 0;">Time: <span id="go-time" style="color:#fff; font-family: monospace; font-size: 1.2rem;"></span></p>
+                    <p style="margin: 5px 0;">Level Reached: <span id="go-level" style="color:var(--primary);"></span></p>
+                    <p style="margin: 5px 0;">Score: <span id="go-score" style="color:var(--primary);"></span></p>
+                    <p style="margin: 5px 0;">Seed: <span id="go-seed" style="color:#aaa;"></span></p>
+                </div>
+                <button id="btn-restart">New Run</button>
+                <button id="btn-menu">Main Menu</button>
             </div>
             
-            <div style="width:100%; text-align:center;">
-                <div id="boss-health-container">
-                    <div id="boss-health-bar"></div>
-                    <div id="boss-name">JUGGERNAUT [ARMORED]</div>
-                </div>
+            <!-- Pause Screen -->
+            <div id="pause-screen" class="screen">
+                <h1>PAUSED</h1>
+                <button id="btn-resume">Resume</button>
+                <button id="btn-quit">Abort Run</button>
             </div>
-            
-            <div class="hud-bottom">
-                <div id="event-log" style="font-size: 1.1rem; color: var(--primary); text-shadow: 0 0 5px var(--primary); height: 60px; display: flex; flex-direction: column; justify-content: flex-end;"></div>
-            </div>
-            <div id="reload-prompt" class="reload-prompt">PRESS R TO RELOAD</div>
         </div>
+    </div>
 
-        <!-- Mobile Controls -->
-        <div id="mobile-controls">
+    <!-- Mobile Controls (Docked below game view on touch devices) -->
+    <div id="mobile-controls">
+        <div class="btn-row">
+            <div id="btn-switch-mobile" class="action-btn">WPN</div>
+            <div id="btn-dash-mobile" class="action-btn">DASH</div>
+            <div id="btn-reload-mobile" class="action-btn">RLD</div>
+        </div>
+        <div class="joystick-row">
             <div id="joystick-left" class="joystick-base"><div class="joystick-knob"></div></div>
             <div id="joystick-right" class="joystick-base"><div class="joystick-knob"></div></div>
-            <div class="action-buttons">
-                <div id="btn-dash-mobile" class="action-btn">DASH</div>
-                <div id="btn-reload-mobile" class="action-btn">RLD</div>
-                <div id="btn-switch-mobile" class="action-btn">WPN</div>
-            </div>
-        </div>
-
-        <!-- Upgrade Screen -->
-        <div id="upgrade-screen" class="screen">
-            <h2>Area Cleared</h2>
-            <p>Select an augmentation for the next arena.</p>
-            <div class="upgrade-cards" id="upgrade-container">
-                <!-- Cards injected here -->
-            </div>
-        </div>
-
-        <!-- Game Over Screen -->
-        <div id="gameover-screen" class="screen">
-            <h1 style="color: var(--danger); text-shadow: 0 0 20px var(--danger);">Run Terminated</h1>
-            <div class="panel" style="text-align: center; margin-bottom: 30px;">
-                <h3 style="margin: 0 0 10px 0;">Final Statistics</h3>
-                <p style="margin: 5px 0;">Time: <span id="go-time" style="color:#fff; font-family: monospace; font-size: 1.2rem;"></span></p>
-                <p style="margin: 5px 0;">Level Reached: <span id="go-level" style="color:var(--primary);"></span></p>
-                <p style="margin: 5px 0;">Score: <span id="go-score" style="color:var(--primary);"></span></p>
-                <p style="margin: 5px 0;">Seed: <span id="go-seed" style="color:#aaa;"></span></p>
-            </div>
-            <button id="btn-restart">New Run</button>
-            <button id="btn-menu">Main Menu</button>
-        </div>
-        
-        <!-- Pause Screen -->
-        <div id="pause-screen" class="screen">
-            <h1>PAUSED</h1>
-            <button id="btn-resume">Resume</button>
-            <button id="btn-quit">Abort Run</button>
         </div>
     </div>
 
@@ -273,23 +298,7 @@ const MathUtils = {
     lerp: (a, b, t) => a + (b - a) * t,
     dist: (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1),
     angle: (x1, y1, x2, y2) => Math.atan2(y2 - y1, x2 - x1),
-    randomRange: (min, max) => min + Math.random() * (max - min),
-    circleRectCollide: (cx, cy, cr, rx, ry, rw, rh) => {
-        let testX = cx;
-        let testY = cy;
-        if (cx < rx) testX = rx; else if (cx > rx + rw) testX = rx + rw;
-        if (cy < ry) testY = ry; else if (cy > ry + rh) testY = ry + rh;
-        let distX = cx - testX;
-        let distY = cy - testY;
-        return (distX*distX + distY*distY) <= (cr*cr);
-    },
-    lineRectCollide: (x1, y1, x2, y2, rx, ry, rw, rh) => {
-        const left = lineLine(x1,y1,x2,y2, rx,ry,rx,ry+rh);
-        const right = lineLine(x1,y1,x2,y2, rx+rw,ry,rx+rw,ry+rh);
-        const top = lineLine(x1,y1,x2,y2, rx,ry,rx+rw,ry);
-        const bottom = lineLine(x1,y1,x2,y2, rx,ry+rh,rx+rw,ry+rh);
-        return left || right || top || bottom;
-    }
+    randomRange: (min, max) => min + Math.random() * (max - min)
 };
 
 function lineLine(x1, y1, x2, y2, x3, y3, x4, y4) {
@@ -375,6 +384,7 @@ const WEAPONS = {
     rifle: { id: 'rifle', name: 'Rifle', dmg: 35, fireRate: 0.35, mag: 15, reload: 1.5, type: 'auto', spread: 0.02, speed: 1200, color: '#0f0', unlock: 15 },
     revolver: { id: 'revolver', name: 'Hand Cannon', dmg: 65, fireRate: 0.6, mag: 6, reload: 2.2, type: 'single', spread: 0.01, speed: 1500, color: '#f50', unlock: 20 }
 };
+
 const UPGRADES = [
     { id: 'hp', name: '+15 Max HP', desc: 'Increases survivability.', apply: p => { p.maxHp += 15; p.hp += 15; } },
     { id: 'reload', name: 'Sleight of Hand', desc: '5% Faster Reload Time.', apply: p => p.stats.reload *= 0.95 },
@@ -384,12 +394,17 @@ const UPGRADES = [
     { id: 'dash', name: 'Quick Charge', desc: '5% Faster Dash Cooldown.', apply: p => p.stats.dashCd *= 0.95 },
     { id: 'heal', name: 'Emergency Repair', desc: 'Heal 50% of missing HP.', apply: p => { p.hp += (p.maxHp - p.hp) * 0.5; } }
 ];
+
 const BOSS_MUTATIONS = [
     { id: 'Armored', apply: b => { b.maxHp *= 1.3; b.hp = b.maxHp; b.color = '#888'; } },
     { id: 'Berserker', apply: b => { b.speed *= 1.25; b.color = '#f00'; b.fireRate *= 0.8; } },
     { id: 'Giant', apply: b => { b.r *= 1.5; b.dmg *= 1.2; b.maxHp *= 1.1; b.hp = b.maxHp; } },
     { id: 'Explosive', apply: b => { b.explosive = true; b.color = '#fa0'; } }
 ];
+
+const var_primary = '#0ff';
+const var_danger = '#f05';
+const var_warn = '#ff0';
 
 // --- CORE CLASSES ---
 const canvas = document.getElementById('gameCanvas');
@@ -401,7 +416,7 @@ class VirtualJoystick {
         this.active = false;
         this.dx = 0; this.dy = 0;
         this.touchId = null;
-        this.radius = this.base.offsetWidth / 2; // Typically 60 or 50 based on CSS
+        this.radius = 0;
 
         this.base.addEventListener('touchstart', this.onStart.bind(this), {passive: false});
         window.addEventListener('touchmove', this.onMove.bind(this), {passive: false});
@@ -412,7 +427,7 @@ class VirtualJoystick {
     onStart(e) {
         e.preventDefault();
         if(this.active) return;
-        this.radius = this.base.offsetWidth / 2; // Update radius dynamically in case of resize
+        this.radius = this.base.offsetWidth / 2; // Update dynamically
         let touch = e.changedTouches[0];
         this.touchId = touch.identifier;
         this.active = true;
@@ -975,10 +990,6 @@ class Arena {
     }
 }
 
-const var_primary = '#0ff';
-const var_danger = '#f05';
-const var_warn = '#ff0';
-
 // --- MAIN GAME MANAGER ---
 class GameManager {
     constructor() {
@@ -1022,6 +1033,7 @@ class GameManager {
         };
         
         this.bindEvents();
+        this.handleResize();
         requestAnimationFrame((t) => this.loop(t));
     }
 
@@ -1036,9 +1048,20 @@ class GameManager {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
     }
 
+    handleResize() {
+        const gameView = document.getElementById('game-view');
+        // Ensure accurate pixel mapping onto the canvas based on its true CSS bounding box
+        if(gameView && gameView.clientWidth > 0) {
+            canvas.width = gameView.clientWidth; 
+            canvas.height = gameView.clientHeight; 
+        } else {
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight; 
+        }
+    }
+
     bindEvents() {
-        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-        window.dispatchEvent(new Event('resize'));
+        window.addEventListener('resize', () => this.handleResize());
         
         document.getElementById('btn-start').addEventListener('click', () => { audio.resume(); this.startRun(this.ui.seedInput.value); });
         document.getElementById('btn-restart').addEventListener('click', () => { this.startRun(this.seed); });
@@ -1129,7 +1152,11 @@ class GameManager {
             this.ui.menu.classList.add('active');
         } else if(newState === 'PLAY') {
             this.ui.hud.classList.add('active');
-            if(this.input.isTouch) this.ui.mobileControls.classList.add('active');
+            if(this.input.isTouch) {
+                this.ui.mobileControls.classList.add('active');
+                // Trigger a resize to ensure the canvas shrinks to fit above the new 40vh control deck.
+                setTimeout(() => this.handleResize(), 50);
+            }
             canvas.style.cursor = 'crosshair';
         } else if(newState === 'UPGRADE') {
             this.ui.upgrade.classList.add('active');
